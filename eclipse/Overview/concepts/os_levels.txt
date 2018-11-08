@@ -1,0 +1,16 @@
+    The operating system is divided into different levels with different
+amounts of power over the system, and are identified by a two-letter prefix
+describing the type of level, and a number identifying its level within that
+type. Common levels are:
+
+    LD - Bootstrap loader
+        * Number usually identifies stage in bootstrapping
+    KN - Kernel
+    TR - (U)EFI transition loader
+    US - User
+
+    The kernel is also divided into multiple levels for drivers:
+    
+    KN0 - LTOS kernel
+    KN1 - Hardware device driver
+    KN2 - Service driver

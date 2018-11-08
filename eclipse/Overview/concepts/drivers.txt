@@ -1,0 +1,5 @@
+    The operating system uses device drivers to abstract hardware-level access
+ like every other OS, but also has a second level of "service" drivers to
+ abstract higher-level concepts. For example, there may be multiple device
+ drivers for different sound devices, but a single service for audio.
+ 

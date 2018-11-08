@@ -1,0 +1,5 @@
+API-<name>              - Libraries with APIs for different parts of the OS
+    API-Architecture     - (Static) Defines different architectural features of hardware
+    API-Hardware         - (Static) Defines different hardware standards
+    API-HeaderCommons    - (Static) Defines common headers used by the OS
+    API-RuntimeCommons   - (Dynamic) API with functions used once the OS is loaded
