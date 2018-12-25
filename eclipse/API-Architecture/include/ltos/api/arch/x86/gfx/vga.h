@@ -14,6 +14,9 @@
 namespace ltos::x86 {
 
 	struct VGA {
+		
+		static constexpr uintptr_t BASE = 0xA0000;
+	
 		/** Enumeration of IO ports used by VGA.
 		 *
 		 */
@@ -81,6 +84,10 @@ namespace ltos::x86 {
 			 */
 			static void download(uint8_t start, uint8_t count, PaletteColor* colors);
 		};
+		
+		static void setCursorEnabled(bool enable);
+		
+		static void setCursorPosition(uint16_t offset);
 	};
 
 }
