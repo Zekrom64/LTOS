@@ -8,9 +8,10 @@
 #ifndef LTOS_API_ARCH_X86_ASM_H_
 #define LTOS_API_ARCH_X86_ASM_H_
 
-
 #include "ltos/lttypes.h"
 #include "ltos/ltarch.h"
+
+#ifdef LT_ARCH_FAMILY_X86
 
 namespace ltos::x86 {
 
@@ -212,5 +213,6 @@ struct X86 {
 
 }
 
+#endif
 
 #endif /* LTOS_API_ARCH_X86_ASM_H_ */

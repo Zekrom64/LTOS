@@ -9,6 +9,9 @@
 #define LTOS_API_ARCH_X86_SERIAL_H_
 
 
+#include "ltos/ltarch.h"
+#ifdef LT_ARCH_FAMILY_X86
+
 #include "ltos/api/port/serial.h"
 
 namespace ltos::x86 {
@@ -40,5 +43,6 @@ public:
 
 }
 
+#endif
 
 #endif /* LTOS_API_ARCH_X86_SERIAL_H_ */

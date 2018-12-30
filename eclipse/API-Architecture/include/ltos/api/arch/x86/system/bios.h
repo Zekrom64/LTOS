@@ -11,6 +11,9 @@
 
 #include "ltos/lttypes.h"
 #include "ltos/ltmacros.h"
+#include "ltos/ltarch.h"
+
+#ifdef LT_ARCH_FAMILY_X86
 
 namespace ltos::x86 {
 
@@ -289,5 +292,6 @@ LT_ASSERT_OFFSETOF(EBDA, userInt18FarPointer,     0x11D)
 
 }
 
+#endif
 
 #endif /* LTOS_API_ARCH_X86_BIOS_H_ */

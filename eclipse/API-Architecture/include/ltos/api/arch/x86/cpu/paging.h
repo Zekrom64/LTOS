@@ -10,6 +10,9 @@
 
 
 #include "ltos/lttypes.h"
+#include "ltos/ltarch.h"
+
+#ifdef LT_ARCH_FAMILY_X86
 
 namespace ltos::x86 {
 
@@ -60,5 +63,6 @@ namespace ltos::x86 {
 
 }
 
+#endif
 
 #endif /* LTOS_API_ARCH_X86_CPU_PAGING_H_ */

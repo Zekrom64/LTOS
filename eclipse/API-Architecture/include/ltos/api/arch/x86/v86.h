@@ -9,7 +9,9 @@
 #define LTOS_API_ARCH_X86_V86_H_
 
 #include "ltos/lttypes.h"
+#include "ltos/ltarch.h"
 
+#ifdef LT_ARCH_FAMILY_X86
 
 namespace ltos::x86 {
 
@@ -115,5 +117,6 @@ namespace ltos::x86 {
 
 }
 
+#endif
 
 #endif /* LTOS_API_ARCH_X86_V86_H_ */

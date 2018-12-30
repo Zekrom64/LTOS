@@ -11,6 +11,9 @@
 
 #include "ltos/lttypes.h"
 #include "ltos/ltmacros.h"
+#include "ltos/ltarch.h"
+
+#ifdef LT_ARCH_FAMILY_X86
 
 namespace ltos::x86 {
 
@@ -44,7 +47,7 @@ namespace ltos::x86 {
 
 #define __X86_DECLARE_EXCEPTION_HAS_CODE__(N) \
 	template<> \
-	struct __X86_EXCEPTION_HAS_CODE__ { \
+	struct __X86_EXCEPTION_HAS_CODE__##N { \
 		static bool hasErrorCode() { return true; } \
 	}; \
 
@@ -134,7 +137,7 @@ namespace ltos::x86 {
 #ifdef LT_ARCH_X86_64
 
 	template<bool HAS_EXCEPT>
-	struct ISRFrame{}
+	struct ISRFrame{};
 
 	template<>
 	struct ISRFrame<false> {
@@ -210,5 +213,6 @@ namespace ltos::x86 {
 
 }
 
+#endif
 
 #endif /* LTOS_API_ARCH_X86_CPU_IDT_H_ */

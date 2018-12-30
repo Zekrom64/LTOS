@@ -8,6 +8,8 @@
 #ifndef LTOS_API_ARCH_X86_CPU_SSE_H_
 #define LTOS_API_ARCH_X86_CPU_SSE_H_
 
+#include <ltos/ltarch.h>
+#ifdef LT_ARCH_FAMILY_X86
 
 #include <xmmintrin.h>
 #include "ltos/ltvecmath.h"
@@ -122,5 +124,6 @@ namespace ltos::x86 {
 
 }
 
+#endif
 
 #endif /* LTOS_API_ARCH_X86_CPU_SSE_H_ */
