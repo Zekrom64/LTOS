@@ -608,26 +608,27 @@ inline uint8_t v86Rcl8(Virtual8086& vm, uint8_t a, uint8_t b) {
 	if (b == 0) return a;
 	a = (a << b) | (a >> (9-b));
 	if (vm.flags.carry) a |= 1 << b-1;
+	// TODO Finish 8086 emulation
 }
 
 // Rotate right through carry
 inline uint8_t v86Rcr8(Virtual8086& vm, uint8_t a, uint8_t b) {
-
+	// TODO Finish 8086 emulation
 }
 
 // Shift left
 inline uint8_t v86Shl8(Virtual8086& vm, uint8_t a, uint8_t b) {
-
+	// TODO Finish 8086 emulation
 }
 
 // Shift right
 inline uint8_t v86Shr8(Virtual8086& vm, uint8_t a, uint8_t b) {
-
+	// TODO Finish 8086 emulation
 }
 
 // Arithmetic Shift Right
 inline uint8_t v86Sar8(Virtual8086& vm, uint8_t a, uint8_t b) {
-
+	// TODO Finish 8086 emulation
 }
 
 

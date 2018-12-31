@@ -50,7 +50,6 @@ inline void bcdToBin(uint8_t& field) {
 
 void CMOS::readRTC(CMOS::RTC* rtc, int centuryRegOffset) {
 	uint8_t statusB = CMOS::read(CMOS::REG_STATUS_B);
-	uint8_t statusA;
 	CMOS::RTC lastRTC;
 	readRTCRaw(rtc, centuryRegOffset);
 	do {

@@ -32,19 +32,19 @@ union PCIDevice;
  * read or write words in the PCI configuration space.
  */
 struct PCIConfigAccess {
-	/**
+	/** Reads a word from a PCI device at the given offset.
 	 *
-	 * @param id
-	 * @param offset
-	 * @return
+	 * @param id PCI device ID
+	 * @param offset Word offset
+	 * @return Word read from device.
 	 */
 	uint32_t (*read)(PCI_ID id, uint32_t offset);
 
-	/**
+	/** Writes a word to a PCI device at the given offset.
 	 *
-	 * @param id
-	 * @param offset
-	 * @param data
+	 * @param id PCI device ID
+	 * @param offset Word offset
+	 * @param data Word to write to device
 	 */
 	void (*write)(PCI_ID id, uint32_t offset, uint32_t data);
 

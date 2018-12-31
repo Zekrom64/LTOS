@@ -27,7 +27,7 @@ namespace ltos::device::pc::adlib {
 			} else {
 				base = 0x10;
 			}
-			return base + channel + ((op - 1) * 3);
+			return base + channel + (op * 3);
 		}
 
 		const uint16_t address, data;
@@ -38,12 +38,6 @@ namespace ltos::device::pc::adlib {
 
 			ltos::x86::X86::outb(data, value);
 			for(int i = 0; i < 35; i++) ltos::x86::X86::inb(address);
-		}
-		uint8_t read(uint8_t reg) {
-			ltos::x86::X86::outb(address, reg);
-			for(int i = 0; i < 6; i++) ltos::x86::X86::inb(address);
-
-			return ltos::x86::X86::inb(data);
 		}
 
 		void enableWaveformCtrl(bool enable) {
@@ -162,26 +156,26 @@ namespace ltos::device::pc::adlib {
 
 			void setFeedback(uint8_t strength, bool noModulation) {
 				adlib.write(
-					(uint8_t)(0xC0 + (channelNumber - 1)),
+					(uint8_t)(0xC0 + channelNumber),
 					(uint8_t)(((strength << 1) & 0xE) | (noModulation ? 1 : 0))
 				);
 			}
 
 			void setFrequency(bool enable, uint8_t octave, uint16_t freqNum) {
 				adlib.write(
-					(uint8_t)(0xA0 + (channelNumber - 1)),
+					(uint8_t)(0xA0 + channelNumber),
 					(uint8_t)freqNum
 				);
 				adlib.write(
-					(uint8_t)(0xB0 + (channelNumber - 1)),
+					(uint8_t)(0xB0 + channelNumber),
 					(uint8_t)((enable ? 0x20 : 0) | ((octave << 2) & 0x1C) | ((freqNum >> 8) & 0x3))
 				);
 			}
 
-			Channel(AdLib& ref, int8_t num) : adlib(ref), channelNumber(num), op1(*this, 1), op2(*this, 2) {}
+			Channel(AdLib& ref, int8_t num) : adlib(ref), channelNumber(num), op1(*this, 0), op2(*this, 1) {}
 		} channels[9];
 
-		AdLib(uint16_t a, uint16_t d) : address(a), data(d), channels{{*this,1},{*this,2},{*this,3},{*this,4},{*this,5},{*this,6},{*this,7},{*this,8},{*this,9}} {}
+		AdLib(uint16_t a, uint16_t d) : address(a), data(d), channels{{*this,0},{*this,1},{*this,2},{*this,3},{*this,4},{*this,5},{*this,6},{*this,7},{*this,8}} {}
 	};
 
 }

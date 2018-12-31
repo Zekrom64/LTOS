@@ -88,7 +88,11 @@ struct RSDT {
 	void* findTable(const char* name) {
 		size_t count = (header.length - sizeof(SDTHeader)) >> 3;
 		for(size_t i = 0; i < count; i++) {
+#ifdef LT_ARCH_X86_32
 			void* tablePtr = (void*)tables[i];
+#elif defined(LT_ARCH_X86_64)
+			void* tablePtr = (void*)((uint64_t)tables[i]);
+#endif
 			if (*((uint32_t*)tablePtr) == *((uint32_t*)name)) return tablePtr;
 		}
 		return nullptr;
@@ -103,7 +107,11 @@ struct XSDT {
 	void* findTable(const char* name) {
 		size_t count = (header.length - sizeof(SDTHeader)) >> 3;
 		for(size_t i = 0; i < count; i++) {
+#ifdef LT_ARCH_X86_32
+			void* tablePtr = (void*)((uint32_t)tables[i]);
+#elif defined(LT_ARCH_X86_64)
 			void* tablePtr = (void*)tables[i];
+#endif
 			if (*((uint32_t*)tablePtr) == *((uint32_t*)name)) return tablePtr;
 		}
 		return nullptr;

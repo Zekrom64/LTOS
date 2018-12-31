@@ -493,10 +493,10 @@ void Virtual8086::step() {
 		V86_SETF(V86_POP)
 	} break;
 
-	case 0xD0: // GRP2 r/m8, 1
-	case 0xD1: // GRP2 r/m16, 1
-	case 0xD2: // GRP2 r/m8, cl
-	case 0xD3: // GRP2 r/m16, cl
+	case 0xD0: // GRP2 r/m8, 1 TODO Finish 8086 emulation
+	case 0xD1: // GRP2 r/m16, 1 TODO Finish 8086 emulation
+	case 0xD2: // GRP2 r/m8, cl TODO Finish 8086 emulation
+	case 0xD3: // GRP2 r/m16, cl TODO Finish 8086 emulation
 	case 0xD4: {                                                                           // AAM imm8
 		V86_IMM8;
 		uint8_t al = registers.al;
@@ -588,16 +588,16 @@ void Virtual8086::step() {
 	case 0xF3: { state.rep = Virtual8086::REP_Z; setRep = true; } break;                   // REPZ
 	case 0xF4: state.halted = true; break;                                                 // HLT
 	case 0xF5: flags.carry ^= true; break;                                                 // CMC
-	case 0xF6: // GRP3a r/m8
-	case 0xF7: // GRP3b r/m16
+	case 0xF6: // GRP3a r/m8 TODO Finish 8086 emulation
+	case 0xF7: // GRP3b r/m16 TODO Finish 8086 emulation
 	case 0xF8: flags.carry = false; break;                                                 // CLC
 	case 0xF9: flags.carry = true; break;                                                  // STC
 	case 0xFA: flags.interrupt = false; break;                                             // CLI
 	case 0xFB: flags.interrupt = true; break;                                              // STI
 	case 0xFC: flags.direction = false; break;                                             // CLD
 	case 0xFD: flags.direction = true; break;                                              // STD
-	case 0xFE: // GRP4 r/m8
-	case 0xFF: // GRP5 r/m16
+	case 0xFE: // GRP4 r/m8 TODO Finish 8086 emulation
+	case 0xFF: // GRP5 r/m16 TODO Finish 8086 emulation
 
 	default: break;
 	}

@@ -11,19 +11,37 @@
 const int PCI_ENUM_CHECK_BUS = 0b00000001;
 const int PCI_ENUM_USE_BUS =   0b00000010;
 
-inline void pciCheckDevice(ltos::PCIConfigAccess& access, ltos::PCI_ID id,
-		uint32_t& count, ltos::PCIDevice*& devList, uint32_t devListCount) {
-
-	uint32_t word = access.read(id, 0);
-	if ((word & 0xFFFF) == 0xFFFF) return; // Device does not exist
-
-
-}
-
 uint32_t ltos::PCIConfigAccess::enumerateDevices(ltos::PCIDevice* devList, uint32_t devListCount) {
 	uint32_t count = 0;
 
-
+	PCIDevice dev;
+	// Brute force scan
+	for(uint16_t bus = 0; bus < 256; bus++) {
+		for(uint8_t device = 0; device < 32; device++) {
+			dev.init(*this, PCI_MAKE_ID(bus, device, 0));
+			// Vendor ID must be valid
+			if (dev.device.vendorID != 0xFFFF) {
+				count++;
+				if (devListCount > 0) {
+					*devList++ = dev;
+					devListCount--;
+				}
+				// Multi-function device
+				if (dev.device.headerType & 0x80) {
+					for(uint8_t i = 1; i < 8; i++) {
+						dev.init(*this, PCI_MAKE_ID(bus, device, i));
+						if (dev.device.vendorID != 0xFFFF) {
+							count++;
+							if (devListCount > 0) {
+								*devList++ = dev;
+								devListCount--;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 
 	return count;
 }

@@ -75,6 +75,24 @@
 
 #endif
 
+#if defined(LT_COMPILER_FAMILY_MSVC) || defined(LT_COMPILER_MINGW)
+
+#define LT_EXPORT __declspec(dllexport)
+#define LT_IMPORT __declspec(dllimport)
+
+#elif defined(LT_COMPILER_FAMILY_GNUC)
+
+#define LT_EXPORT extern
+#define LT_IMPORT extern
+
+#endif
+
+#ifdef LT_BUILD
+#define LT_API LT_EXPORT
+#else
+#define LT_API LT_IMPORT
+#endif
+
 /* ----------------------
  * | Standard Utilities |
  * ---------------------- */
