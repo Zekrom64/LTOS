@@ -53,9 +53,110 @@ void v86Grp2_8(Virtual8086& vm, uint8_t modrm, uint16_t displace, uint8_t b) {
 	case 3: a = v86Rcr8(vm, a, b); break;
 	case 4: a = v86Shl8(vm, a, b); break;
 	case 5: a = v86Shr8(vm, a, b); break;
-	case 7: v86Sar8(vm, a, b); return;
+	case 7: a = v86Sar8(vm, a, b); return;
 	}
 	v86WriteRM8(vm, modrm, displace, a);
+}
+
+void v86Grp2_16(Virtual8086& vm, uint8_t modrm, uint16_t displace, uint8_t b) {
+	uint8_t op = (modrm >> 3) & 0x7;
+	if (op == 6) return; // GRP2:6 not implemented
+	uint16_t a = v86ReadRM16(vm, modrm, displace);
+	switch(op) {
+	case 0: a = v86Rol16(vm, a, b); break;
+	case 1: a = v86Ror16(vm, a, b); break;
+	case 2: a = v86Rcl16(vm, a, b); break;
+	case 3: a = v86Rcr16(vm, a, b); break;
+	case 4: a = v86Shl16(vm, a, b); break;
+	case 5: a = v86Shr16(vm, a, b); break;
+	case 7: a = v86Sar16(vm, a, b); return;
+	}
+	v86WriteRM16(vm, modrm, displace, a);
+}
+
+void v86Grp3_8(Virtual8086& vm, uint8_t modrm, uint16_t displace) {
+	uint8_t op = (modrm >> 3) & 0x7;
+	if (op == 1) return; // GRP3:1 not implemented
+	uint8_t a = v86ReadRM8(vm, modrm, displace);
+	switch(op) {
+	case 0: {
+		uint8_t imm = vm.access.memRead(v86Segment(vm.registers.cs, vm.registers.ip++));
+		v86Test8(vm, a, imm);
+	} return;
+	case 2: a = v86Not8(vm, a); break;
+	case 3: a = v86Neg8(vm, a); break;
+	case 4: v86Mul8(vm, a); return;
+	case 5: v86IMul8(vm, a); return;
+	case 6: v86Div8(vm, a); return;
+	case 7: v86IDiv8(vm, a); return;
+	}
+	v86WriteRM8(vm, modrm, displace, a);
+}
+
+
+void v86Grp3_16(Virtual8086& vm, uint8_t modrm, uint16_t displace) {
+	uint8_t op = (modrm >> 3) & 0x7;
+	if (op == 1) return; // GRP3:1 not implemented
+	uint8_t a = v86ReadRM16(vm, modrm, displace);
+	switch(op) {
+	case 0: {
+		uint16_t imm = v86ReadImm16(vm);
+		v86Test16(vm, a, imm);
+	} return;
+	case 2: a = v86Not16(vm, a); break;
+	case 3: a = v86Neg16(vm, a); break;
+	case 4: v86Mul16(vm, a); return;
+	case 5: v86IMul16(vm, a); return;
+	case 6: v86Div16(vm, a); return;
+	case 7: v86IDiv16(vm, a); return;
+	}
+	v86WriteRM16(vm, modrm, displace, a);
+}
+
+void v86Grp4(Virtual8086& vm, uint8_t modrm, uint16_t displace) {
+	uint8_t op = (modrm >> 3) & 0x7;
+	if (op > 1) return; // GRP4:2-7 not implemented
+	uint8_t a = v86ReadRM8(vm, modrm, displace);
+	switch(op) {
+	case 0: a = v86Inc8(vm, a); break;
+	case 1: a = v86Dec8(vm, a); break;
+	}
+	v86WriteRM8(vm, modrm, displace, a);
+}
+
+void v86Grp5(Virtual8086& vm, uint8_t modrm, uint16_t displace) {
+	uint8_t op = (modrm >> 3) & 0x7;
+	if (op == 7) return; // GRP5:7 not implemented
+	switch(op) {
+	case 0: {
+		uint8_t a = v86ReadRM16(vm, modrm, displace);
+		a = v86Inc16(vm, a);
+		v86WriteRM16(vm, modrm, displace, a);
+	} break;
+	case 1: {
+		uint8_t a = v86ReadRM16(vm, modrm, displace);
+		a = v86Dec16(vm, a);
+		v86WriteRM16(vm, modrm, displace, a);
+	} break;
+	case 2: {
+		v86Push(vm, vm.registers.ip);
+		vm.registers.ip = v86ReadRM16(vm, modrm, displace);
+	} break;
+	case 3: {
+		uint32_t target = v86ReadRM32(vm, modrm, displace);
+		v86Push(vm, vm.registers.cs);
+		v86Push(vm, vm.registers.ip);
+		vm.registers.ip = target & 0xFFFF;
+		vm.registers.cs = target >> 16;
+	} break;
+	case 4: vm.registers.ip = v86ReadRM16(vm, modrm, displace); break;
+	case 5: {
+		uint32_t target = v86ReadRM32(vm, modrm, displace);
+		vm.registers.ip = target & 0xFFFF;
+		vm.registers.cs = target >> 16;
+	} break;
+	case 6: v86Push(vm, v86ReadRM16(vm, modrm, displace)); break;
+	}
 }
 
 void Virtual8086::step() {
@@ -493,10 +594,10 @@ void Virtual8086::step() {
 		V86_SETF(V86_POP)
 	} break;
 
-	case 0xD0: // GRP2 r/m8, 1 TODO Finish 8086 emulation
-	case 0xD1: // GRP2 r/m16, 1 TODO Finish 8086 emulation
-	case 0xD2: // GRP2 r/m8, cl TODO Finish 8086 emulation
-	case 0xD3: // GRP2 r/m16, cl TODO Finish 8086 emulation
+	case 0xD0: { V86_MODRM v86Grp2_8(*this, modrm, displace, 1); } break;                  // GRP2 r/m8, 1
+	case 0xD1: { V86_MODRM v86Grp2_16(*this, modrm, displace, 1); } break;                 // GRP2 r/m16, 1
+	case 0xD2: { V86_MODRM v86Grp2_8(*this, modrm, displace, registers.cl); } break;       // GRP2 r/m8, cl
+	case 0xD3: { V86_MODRM v86Grp2_16(*this, modrm, displace, registers.cl); } break;      // GRP2 r/m16, cl
 	case 0xD4: {                                                                           // AAM imm8
 		V86_IMM8;
 		uint8_t al = registers.al;
@@ -588,16 +689,16 @@ void Virtual8086::step() {
 	case 0xF3: { state.rep = Virtual8086::REP_Z; setRep = true; } break;                   // REPZ
 	case 0xF4: state.halted = true; break;                                                 // HLT
 	case 0xF5: flags.carry ^= true; break;                                                 // CMC
-	case 0xF6: // GRP3a r/m8 TODO Finish 8086 emulation
-	case 0xF7: // GRP3b r/m16 TODO Finish 8086 emulation
+	case 0xF6: { V86_MODRM v86Grp3_8(*this, modrm, displace); } break;                     // GRP3a r/m8
+	case 0xF7: { V86_MODRM v86Grp3_16(*this, modrm, displace); } break;                    // GRP3b r/m16
 	case 0xF8: flags.carry = false; break;                                                 // CLC
 	case 0xF9: flags.carry = true; break;                                                  // STC
 	case 0xFA: flags.interrupt = false; break;                                             // CLI
 	case 0xFB: flags.interrupt = true; break;                                              // STI
 	case 0xFC: flags.direction = false; break;                                             // CLD
 	case 0xFD: flags.direction = true; break;                                              // STD
-	case 0xFE: // GRP4 r/m8 TODO Finish 8086 emulation
-	case 0xFF: // GRP5 r/m16 TODO Finish 8086 emulation
+	case 0xFE: { V86_MODRM v86Grp4(*this, modrm, displace); } break;                       // GRP4 r/m8
+	case 0xFF: { V86_MODRM v86Grp5(*this, modrm, displace); } break;                       // GRP5 r/m16
 
 	default: break;
 	}

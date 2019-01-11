@@ -13,7 +13,6 @@
 #include "ltmacros.h"
 #include "ltarch.h"
 
-
 namespace ltos {
 
 /* -----------

@@ -167,6 +167,16 @@ inline void LT_STRING_SWITCH(register const T* str, register const T** matches, 
 	}
 }
 
+template<typename X, typename Y>
+inline Y LT_BITWISE_CAST(X x) {
+	union {
+		X x;
+		Y y;
+	} bitunion;
+	bitunion.x = x;
+	return bitunion.y;
+}
+
 /* ------------------------
  * | Compile-Time Asserts |
  * ------------------------ */

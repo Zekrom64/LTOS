@@ -10,8 +10,23 @@
 
 #include "ltos/api/arch/x86/v86.h"
 #include "ltos/api/arch/x86/asm.h"
+#include "ltos/ltmacros.h"
 
 using namespace ltos::x86;
+
+inline int16_t v86Signx16(uint8_t a) {
+	int16_t y;
+	y = LT_BITWISE_CAST<uint8_t,int16_t>(a);
+	if (a & 0x80) y |= 0xFF00;
+	return y;
+}
+
+inline int32_t v86Signx32(uint16_t a) {
+	int32_t y;
+	y = LT_BITWISE_CAST<uint16_t,int32_t>(a);
+	if (a & 0x8000) y |= 0xFFFF0000;
+	return y;
+}
 
 /* -----------------------
  * | Address Computation |
@@ -258,6 +273,21 @@ void v86WriteRM16(Virtual8086& vm, uint8_t modrm, uint16_t disp, uint16_t value)
 }
 #define V86_WRITE_RM16(V) v86WriteRM16(*this, modrm, displace, V);
 
+
+uint32_t v86ReadRM32(Virtual8086& vm, uint8_t modrm, uint16_t disp) {
+	uint8_t mod = modrm >> 6;
+	uint8_t reg = modrm & 0x7;
+	if (mod == 3) return v86ReadReg16(vm, modrm); // reg (32-bit only used for memory in 8086, this is undefined behavior)
+
+	uint16_t index = v86ComputeRMAddr(vm, reg, mod, disp);
+	uint16_t segment = v86ComputeRMSeg(vm, reg, mod);
+
+	uint32_t value = vm.access.memRead(v86Segment(segment, index++));
+	value |= vm.access.memRead(v86Segment(segment, index++)) << 8;
+	value |= vm.access.memRead(v86Segment(segment, index++)) << 16;
+	value |= vm.access.memRead(v86Segment(segment, index)) << 24;
+	return value;
+}
 /* --------------------
  * | Stack Operations |
  * -------------------- */
@@ -415,6 +445,79 @@ inline uint16_t v86Sbb16(Virtual8086& vm, uint16_t a, uint16_t b) {
 }
 #define V86_SBB16(A,B) v86Sbb16(*this, A, B)
 
+// Multiplication
+inline void v86Mul8(Virtual8086& vm, uint8_t a) {
+	uint16_t prod = vm.registers.al;
+	prod *= a;
+	vm.registers.ax = prod;
+	vm.flags.overflow = (vm.flags.carry = ((prod & 0xFF00) != 0));
+}
+
+inline void v86Mul16(Virtual8086& vm, uint16_t a) {
+	uint32_t prod = vm.registers.ax;
+	prod *= a;
+	vm.registers.ax = prod & 0xFFFF;
+	vm.registers.dx = prod >> 16;
+	vm.flags.overflow = (vm.flags.carry = ((prod & 0xFFFF0000) != 0));
+}
+
+inline void v86IMul8(Virtual8086& vm, uint8_t a) {
+	int16_t prod = v86Signx16(vm.registers.al);
+	prod *= v86Signx16(a);
+	vm.registers.ax = LT_BITWISE_CAST<uint16_t,int16_t>(prod);
+	vm.flags.overflow = (vm.flags.carry = ((prod & 0xFF00) != 0));
+}
+
+inline void v86IMul16(Virtual8086& vm, uint16_t a) {
+	int32_t prod = v86Signx32(vm.registers.ax);
+	prod *= v86Signx32(a);
+	vm.registers.ax = LT_BITWISE_CAST<uint16_t,int16_t>(prod & 0xFFFF);
+	vm.registers.dx = LT_BITWISE_CAST<uint16_t,int16_t>(prod >> 16);
+	vm.flags.overflow = (vm.flags.carry = ((prod & 0xFFFF0000) != 0));
+}
+
+// Division
+inline void v86Div8(Virtual8086& vm, uint8_t a) {
+	if (a == 0) return; // TODO: 8086 exception handling
+	uint16_t dividend = vm.registers.ax;
+	vm.registers.al = dividend / a;
+	vm.registers.ah = dividend % a;
+}
+
+inline void v86Div16(Virtual8086& vm, uint16_t a) {
+	if (a == 0) return; // TODO: 8086 exception handling
+	uint32_t dividend = (((uint32_t)vm.registers.dx)<<16) | vm.registers.ax;
+	vm.registers.ax = dividend / a;
+	vm.registers.dx = dividend % a;
+}
+
+inline void v86IDiv8(Virtual8086& vm, uint8_t a) {
+	if (a == 0) return; // TODO: 8086 exception handling
+	int16_t dividend = LT_BITWISE_CAST<uint16_t,int16_t>(vm.registers.ax);
+	vm.registers.al = LT_BITWISE_CAST<int16_t,uint8_t>(dividend / a);
+	vm.registers.ah = LT_BITWISE_CAST<int16_t,uint8_t>(dividend % a);
+}
+
+inline void v86IDiv16(Virtual8086& vm, uint16_t a) {
+	if (a == 0) return; // TODO: 8086 exception handling
+	int32_t dividend = LT_BITWISE_CAST<uint32_t,int32_t>((((uint32_t)vm.registers.dx)<<16) | vm.registers.ax);
+	vm.registers.ax = LT_BITWISE_CAST<int32_t,uint16_t>(dividend / a);
+	vm.registers.dx = LT_BITWISE_CAST<int32_t,uint16_t>(dividend % a);
+}
+
+// Negate
+inline uint8_t v86Neg8(Virtual8086& vm, uint8_t a) {
+	vm.flags.carry = a == 0;
+	a = -a;
+	return a;
+}
+
+inline uint16_t v86Neg16(Virtual8086& vm, uint16_t a) {
+	vm.flags.carry = a == 0;
+	a = -a;
+	return a;
+}
+
 // Bitwise OR
 
 inline uint8_t v86Or8(Virtual8086& vm, uint8_t a, uint8_t b) {
@@ -486,6 +589,15 @@ inline uint16_t v86Xor16(Virtual8086& vm, uint16_t a, uint16_t b) {
 	return a;
 }
 #define V86_XOR16(A,B) v86Xor16(*this, A, B)
+
+// Bitwise NOT
+inline uint8_t v86Not8(Virtual8086& vm, uint8_t a) {
+	return ~a;
+}
+
+inline uint16_t v86Not16(Virtual8086& vm, uint16_t a) {
+	return ~a;
+}
 
 // Compare
 
@@ -607,28 +719,136 @@ inline uint8_t v86Rcl8(Virtual8086& vm, uint8_t a, uint8_t b) {
 	b %= 9;
 	if (b == 0) return a;
 	a = (a << b) | (a >> (9-b));
-	if (vm.flags.carry) a |= 1 << b-1;
-	// TODO Finish 8086 emulation
+	bool newcarry = a & (1 << (8-b));
+	if (vm.flags.carry) a |= 1 << (b-1);
+	vm.flags.carry = newcarry;
+	vm.flags.overflow = ((a & 0x80) != 0) ^ vm.flags.carry;
+	return a;
+}
+
+inline uint16_t v86Rcl16(Virtual8086& vm, uint16_t a, uint8_t b) {
+	b %= 17;
+	if (b == 0) return a;
+	a = (a << b) | (a >> (17-b));
+	bool newcarry = a & (1 << (16-b));
+	if (vm.flags.carry) a |= 1 << (b-1);
+	vm.flags.carry = newcarry;
+	vm.flags.overflow = ((a & 0x8000) != 0) ^ vm.flags.carry;
+	return a;
 }
 
 // Rotate right through carry
 inline uint8_t v86Rcr8(Virtual8086& vm, uint8_t a, uint8_t b) {
-	// TODO Finish 8086 emulation
+	vm.flags.overflow = ((a & 0x80) != 0) ^ vm.flags.carry;
+	b %= 9;
+	if (b == 0) return a;
+	a = (a >> b) | (a << (9-b));
+	bool newcarry = a & (0x80 >> (8-b));
+	if (vm.flags.carry) a |= 0x80 >> (b-1);
+	vm.flags.carry = newcarry;
+	return a;
+}
+
+inline uint16_t v86Rcr16(Virtual8086& vm, uint16_t a, uint8_t b) {
+	vm.flags.overflow = ((a & 0x8000) != 0) ^ vm.flags.carry;
+	b %= 17;
+	if (b == 0) return a;
+	a = (a >> b) | (a << (17-b));
+	bool newcarry = a & (0x8000 >> (16-b));
+	if (vm.flags.carry) a |= 0x8000 >> (b-1);
+	vm.flags.carry = newcarry;
+	return a;
 }
 
 // Shift left
 inline uint8_t v86Shl8(Virtual8086& vm, uint8_t a, uint8_t b) {
-	// TODO Finish 8086 emulation
+	if (b == 0) return a;
+	vm.flags.overflow = a & 0x80;
+	vm.flags.carry = a & (0x80 >> (b-1));
+	a <<= b;
+	vm.flags.sign = a & 0x80;
+	vm.flags.zero = a == 0;
+	vm.flags.parity = X86::parity(a);
+	return a;
+}
+
+inline uint16_t v86Shl16(Virtual8086& vm, uint16_t a, uint8_t b) {
+	if (b == 0) return a;
+	vm.flags.overflow = a & 0x8000;
+	vm.flags.carry = a & (0x8000 >> (b-1));
+	a <<= b;
+	vm.flags.sign = a & 0x8000;
+	vm.flags.zero = a == 0;
+	vm.flags.parity = X86::parity(a & 0xFF);
+	return a;
 }
 
 // Shift right
 inline uint8_t v86Shr8(Virtual8086& vm, uint8_t a, uint8_t b) {
-	// TODO Finish 8086 emulation
+	if (b == 0) return a;
+	vm.flags.overflow = a & 0x80;
+	vm.flags.carry = a & (1 << (b-1));
+
+	for(uint8_t i = 0; i < b; i++) {
+		a >>= 1;
+		a &= 0x80;
+	}
+
+	vm.flags.sign = a & 0x80;
+	vm.flags.zero = a == 0;
+	vm.flags.parity = X86::parity(a);
+	return a;
+}
+
+inline uint16_t v86Shr16(Virtual8086& vm, uint16_t a, uint8_t b) {
+	if (b == 0) return a;
+	vm.flags.overflow = a & 0x8000;
+	vm.flags.carry = a & (1 << (b-1));
+
+	for(uint8_t i = 0; i < b; i++) {
+		a >>= 1;
+		a &= 0x8000;
+	}
+
+	vm.flags.sign = a & 0x8000;
+	vm.flags.zero = a == 0;
+	vm.flags.parity = X86::parity(a & 0xFF);
+	return a;
 }
 
 // Arithmetic Shift Right
 inline uint8_t v86Sar8(Virtual8086& vm, uint8_t a, uint8_t b) {
-	// TODO Finish 8086 emulation
+	if (b == 0) return a;
+	vm.flags.overflow = a & 0x80;
+	vm.flags.carry = a & (1 << (b-1));
+
+	bool sign = a & 0x80;
+	for(uint8_t i = 0; i < b; i++) {
+		a >>= 1;
+		if (sign) a |= 0x80;
+	}
+
+	vm.flags.sign = a & 0x80;
+	vm.flags.zero = a == 0;
+	vm.flags.parity = X86::parity(a);
+	return a;
+}
+
+inline uint16_t v86Sar16(Virtual8086& vm, uint16_t a, uint8_t b) {
+	if (b == 0) return a;
+	vm.flags.overflow = a & 0x8000;
+	vm.flags.carry = a & (1 << (b-1));
+
+	bool sign = a & 0x8000;
+	for(uint8_t i = 0; i < b; i++) {
+		a >>= 1;
+		if (sign) a |= 0x8000;
+	}
+
+	vm.flags.sign = a & 0x8000;
+	vm.flags.zero = a == 0;
+	vm.flags.parity = X86::parity(a & 0xFF);
+	return a;
 }
 
 
